@@ -1,0 +1,64 @@
+/*
+ * Complete Lite Syntax (DNF 范式, 是 duangsuse 设计的一种即使没有规则你们也能看懂的无上下文词条流模式文法描述)
+ * (看起来很高大上的东西, 其实没啥用.....)
+ * Lite 的一个比较特殊的地方在于使用缩进语义, 我也是为了好看... 不过如果使用递归下降法, 解析不是问题耶
+ * 强制你使用 duangsuse 喜欢的 2 空格缩进代码风格, 语言本身类似 Ruby (Ruby 岛国语言好耶)
+ * 有趣的语法: ![str1 str2 str3] . each { |e| puts e } if a == 1 & b === :c
+ *
+ * #### TABLED symbol ####
+ * newline  : '\n'
+ * ident    : '  '
+ * l_square : '['
+ * r_square : ']'
+ * let      : '='
+ * at       : '@'
+ * call     : '()'
+ * bang     : '!'
+ * sub      : '-'
+ * inc      : '++'
+ * dec      : '--'
+ * #### FINISH symbol ####
+ *
+ * math -> expr Maybe( '+' OR '-' OR '*' OR '/' OR '**' OR '%' OR '<' OR '<=' OR '>' OR '>=' OR '&' OR '|' OR '==' OR '===' OR '!=' OR '<<' ) expr
+ * binary -> math | cast | dot | in | square | stabby
+ * expression -> binary | list | table | value | incDec | not | negative | call | identifier | index | blockProcedure | doBlock
+ * statement -> def | for | scope | while | if | excited_statement
+ * excited_statement -> break | next | import | require | return | trace | assignment | indexLet | square | stabby | dot | incDec | call Maybe( IF expression )
+ * block -> Ary( IDENT statement NEWLINE )
+ * for -> FOR identifier IN expression NEWLINE block
+ * while -> WHILE expression NEWLINE block
+ * scope -> SCOPE NEWLINE block
+ * indexLet -> expression L_SQUARE expression R_SQUARE LET expression
+ * index -> expression L_SQUARE expression R_SQUARE
+ * if -> IF expression NEWLINE block Maybe( Ary( IDENT ELIF expression NEWLINE block ) ) Maybe( IDENT ELSE NEWLINE block )
+ * identifier -> Maybe( AT ) label
+ * def -> DEF identifier Maybe( nameList ) NEWLINE block
+ * call -> identifier Maybe( CALL OR exprList )
+ * assignment -> identifier LET expression
+ * not -> BANG expression
+ * negative -> SUB expression
+ * incDec -> identifier Maybe( INC OR DEC )
+ * trace -> TRACE Maybe( Ary( Any() ) )
+ * return -> RETURN expression
+ * require -> REQUIRE Any()
+ * next -> NEXT
+ * break -> BREAK
+ * import -> IMPORT Maybe( Ary( Any() ) )
+ * value -> TRUE | FALSE | NIL | Number() | string
+ * string -> '"' Maybe( Ary( Any() ) ) '"' | stringB | stringC
+ * stringB -> "'" Maybe( Ary( Any() ) ) "'"
+ * stringC -> ':' label
+ * list -> Maybe( BANG ) L_SQUARE exprList R_SQUARE
+ * table -> '{' kvList '}'
+ * kvList -> Ary( label ':' expression Maybe( ',' OR NEWLINE ) )
+ * stabby -> expression '->' label expression
+ * square -> expression '::' label
+ * in -> expression IN expression
+ * dot -> expression '.' label Maybe( CALL OR exprList )
+ * cast -> expression AS label
+ * exprList -> Ary( expr Maybe( ' ' OR ',' ) )
+ * nameList -> Maybe( '(' ) Ary( name Maybe( ',' OR ' ' ) ) Maybe( ')' )
+ * nameListB -> '|' Ary( name Maybe( ',' OR ' ' ) ) '|'
+ * blockProcedure -> '{' Maybe( nameListB ) Ary( excited_statement ':' ) '}'
+ * doBlock -> DO Maybe ( nameListB ) block
+ */

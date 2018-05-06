@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="classes">
+    <output-path>$PROJECT_DIR$/out/artifacts/classes</output-path>
+    <root id="root">
+      <element id="module-output" name="lite" />
+    </root>
+  </artifact>
+</component>

@@ -1,0 +1,164 @@
+ true false nil
+ '' "" 字符串
+ 1 1l 1n 1f //0x1 0b1000 number
+ ^ 不打算支持进制自动换算了
+ ![] [] 列表
+ { a.exit } do || Proc
+ { a: 1, b: 2 } Hash
+
+import java.lang.String
+import java.lang
+
+require lib/a
+require a
+
+1 + 1 - 1 % 0x2
+System.out.println 1
+System::out.print @a
+lite['a'] = 1
+lite->a "Hello"
+![a b c]->1 'a'
+lite[1]
+lite[@a]
+{ a: 1, b: 2, c:3 }
+{ a: @a, b: @b }
+nil 1 23 true
+
+trace hello world
+
+for i in @iter
+  break
+  next # comment
+
+for @i in System.collection
+  puts @i
+
+@i++ @i--
+
+if "bad linux" in [ "foo", System.out.toString, Runtime.runtime as String ]
+  puts "2333 333333 333333"
+
+def a
+  return 1
+
+def java.lang.System.b
+  return "Goodbye, cruel world"
+
+def $java.lang.Integer.fmt a b c
+  puts 'oh no'
+  return String.format a b c
+
+def neg i
+  return -i
+
+def not_ i
+  return !i
+
+@a = System.in
+b = '2'
+
+import java.lang.String
+str = String("Be a good guy") # Construct a java object
+str = java_lang_String("yes") # alternative java Class identifier
+str = java.lang.Integer(1) # Bad but acceptable
+str = neg(233f)
+@notnot = not true # must not be true....
+Hashtable()[Integer(1)] = "kotlin f**king comming"
+Hashtable()::1
+def tbl
+  {a:"Hello"}
+
+puts tbl()::a
+scope
+  @b = tbl()
+  @b->a "Goodbye"
+  @b->c { puts @self::a }
+  @b.c # LiteBlock
+  @b.c()
+
+java_lang_System # identifier
+
+while true
+  break
+
+while System.out == "a"
+  if System.in == "b"
+    elif a === null
+      next
+    else
+      break
+
+# AST Field
+
+LiteNode
+  BinaryOperator lhs:node operator:byte rhs:node
+  LiteDot lhs:node rhs:str args:list(node)
+  LiteSquare lhs:node rhs:str
+  LiteStabby lhs:node rhs:str value:node
+  LiteList init:list(node)
+  LiteTable init:tbl(str, node)
+  LiteValue val:object
+  LiteBreak
+  LiteImport path:str
+  LiteNext
+  LiteRequire path:str
+  LiteReturn expr:node
+  LiteTrace content:str
+  LiteIncDec ident:identifier isdec:bool
+  LiteNegative expr:node
+  LiteNot expr:node
+  LiteAssignment ident:identifier value:node
+  LiteCall ident:identifier args:list(node)
+  LiteDef ident:identifier body:block
+  LiteFor var:ident expr:node body:block
+  LiteIdentifier local:bool label:str
+  LiteIf sit:node ifbranch:block elif:tbl(node, block) else:block
+  LiteIndex lhs:node index:node
+  LiteIndexLet lhs:node index:node val:node
+  LiteScope blk:block
+  LiteWhile sit:node body:block
+  LiteBlock args:list(str) stmts:list(node) breaked:bool next:bool ctx:interpreter
+
+... 本来打算手写 parser 的
+... （本来有个叫 h2 的语言是使用虚拟机执行的，太花时间也废了）...
+# Lite WTBNF
+block -> { '  ' statement '\n' }
+statement -> liteif | litewhile | litescope | litefor | liteassign | litereturn | litebreak | litenext | liteimport | literequire
+             litetrace | litedef | expr
+liteif -> IF cond '\n' block { ELIF cond '\n' block } [ ELSE '\n' block ]
+litewhile -> WHILE cond '\n' block
+litescope -> SCOPE block
+litefor -> FOR ident IN expr '\n' block
+liteassign -> ident '=' expr
+litereturn -> RETURN expr
+litebreak -> BREAK
+litenext -> NEXT
+liteimport -> IMPORT package_class
+literequire -> REQUIRE file
+litetrace -> TRACE message
+litedef -> DEF name { argname } '\n' block
+expr -> bin | dot | square | stabby | list | table | value | incdec | neg | not | call | ident | index
+            | indexlet | doblock | value | proc
+explist -> { ' ' liteexpr } | explist1
+explist1 -> { ',' liteexpr }
+bin -> expr operator expr
+operator -> + - * / ** % < <= > >= & | == === != <<
+dot -> expr '.' label [ '(' ] [ explist ] [ ')' ]
+square -> expr '::' label
+stabby -> expr '->' label expr
+list -> '[' explist ']'
+table -> '{' tableentry '}'
+tableentry -> { label ':' expr [ ( ',' | '\n' ) ] }
+value -> TRUE | FALSE | NIL | number | string
+incdec -> inc | dec
+inc -> identifier '++'
+dec -> identifier '--'
+neg -> '-' expr
+not -> '!' expr
+call -> identifier ( '()' | explist )
+ident -> identifier
+identifier -> [ @ ] label
+index -> expr '[' expr ']'
+indexlet -> expr '[' expr ']' '=' expr
+doblock -> DO '\n' block
+proc -> '{' '|' { argname } '|' { statement ',' } '}'
