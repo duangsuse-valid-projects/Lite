@@ -12,6 +12,91 @@
 
 ^ (我的意思是一个类似 Int 的解释器工具, 有扩展功能：快速输入 Keyword|Operator/AST 查看/Lex 结果查看/高亮/获取设置变量/脚本分享/Reflect 可视化查看(类/对象/方法/直接创建原生类型/调用方法和类型构造器)/Intent 接口 等的 Android 应用)
 
+^ 我现在明确的告诉你们，我写这么垃圾的解释器的目标是提供 Androlua 的替代品，即使后者已经开发了两年，后者维护的用心程度是非常的 ~~fucking~~, 默认打包体积已经超过了预算达到几乎 500k, 而且自带 TextWarrior 和百度 SDK, 而且虽然开源但源码没更新很久，而且 Lua 用在这上面大才小用，而且 AndroLuaJ 也不开源，而且它还加了壳，这是我忍不了的，而且他们不够优雅，因为 Lua 不够优雅，比方说
+
+在 Lite 里你可以这么写（套用 Ruby 的例子了）
+（很抱歉小部分是下一个手写 parser 版本的语法, 这个版本的 parser 根本离不开 end）
+（如果你找到了好看的语法务必告诉我，我立刻 ~~抄~~ 过来）
+（目前不打算支持 heredoc 和更高级的 number 表示）
+
+```ruby
+import android.widget
+import android.view
+
+@botton = Button(ctx)
+@text = TextView(ctx)
+lay << @button
+lay << @text # 这是 Lite 1.1 的语法, AST 解释器的内部隐式方法调用支持内部实现 def LinearLayout$add .....
+@button.clicked do
+  for i in ![华莱士 香港记者 西方记者]
+    puts "你们还是 Too young! 我比 " + i + " 高到不知哪里去了"
+  end
+end
+# next example
+case input.text
+  "OC<"
+    puts ""
+  contains "foo" exit
+  nil exit if false
+  length(0) puts "${input.text}"
+```
+
+(Andro)Lua 里
+
+```
+import 'android.widget.*'
+import 'android.view.*'
+
+local button = Button(activity)
+local text = TextView
+lay.addView(button)
+lay.addView(text)
+button.onClick=function()
+  for i in ['华莱士', '香港记者', '西方记者'] do
+    print("你们还是 Too young! 我比 " + i + "高到不知哪里去了")
+  end
+end
+```
+
+Lice 里
+
+```scheme
+; print a string
+(print "Hello " "World" "\n")
+#
+puts "Hello" "Word\n" # 高级的块参数填充（*varargs/name=default）这个版本就会有, 不过是出几天后的事了
+
+; travel through a range
+(for-each i (.. 1 10) (print i "\n"))
+for i in 1..10
+  print i "\n" # single-quote 不会转义...
+end
+
+; define a call-by-name function
+(defexpr fold ls init op
+ (for-each index-var ls
+   (-> init (op init index-var))))
+def fold(list initializer block) # paren 不是必须的
+  for index-var in ls
+    init = block(initializer index-var)
+    # 删除, Lite 里不支持这种操作，不过你可以使用 lite[init] = .... 可以实现这种功能(Lite 的 indexLet 可以调用 Java set 方法)
+
+; invoke the function defined above
+(fold (.. 1 4) 0 +)
+fold 1..4 0 { |a, b| a + b } #.... 23333 不过也是没办法, 毕竟不是 Ruby
+
+; passing a call-by-value lambda to a call-by-value lambda
+((lambda op (op 3 4)) (lambda a b (+ (* a a) (* b b))))
+foo = { |op| op(3, 4) } # 不是 Lite 不支持块或者啥 lambda value(明明所有 def 函数都是 name = block 语法糖), 语法表现力不够(不支持 paren expression)... 但这是为了保证一切简单
+foo do |a b|
+  a * a + b * b # 你也可以用 a ** 2
+end  
+
+; to define a call-by-need lambda, use `lazy`. # call-by-need 是什么鬼，我不知道，哪个 dalao 帮我解释一下... 233333$_$
+```
+
+^ 即使是这样，Lite 不是一门 DSL（领域特定语言），即使它被设计为专门用来开发小型运行于 JVM 上的应用程序
+
 当时的（H2）设计为使用虚拟机执行，虚拟机后来被命名为 AqoursVM，可是由于太麻烦的原因也没有开发，而是转而做了个 AST 解释器... (此时还有 GeekApk 等项目待完成)
 
 最后的结果是苦战四天写了大概 6k 行代码（大多是复制粘贴，我说的是 Copy-Your-Self）后 终于还有一个解析器.... 解析器... 没写
