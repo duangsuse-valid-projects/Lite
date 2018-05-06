@@ -132,6 +132,8 @@ while System.out == "a"
 
 > 以上直接使用了 Ruby 高亮，实际上 Lite 的 Lexer 自带高亮, 使用 `-lexP` 就可以在 `ANSI escaped terminal` 上看到高亮字体
 
+![shot](https://github.com/duangsuse/Lite/raw/master/2018-05-06%2015-26-53%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png)
+
 duangsuse 设计了一种类似 BNF 的语言来描述 Lite 的语法
 
 ```plain
