@@ -1,0 +1,55 @@
+// Lite parser, by duangsuse and written in cup
+// (C) 2018 no rights is reserved
+
+// for the scanner see scanner.flex
+// for unicode escape see unicode.flex
+
+import java_cup.runtime.*;
+
+// Begin parser
+parser code {:
+    // Connect this parser to a scanner!
+    Scanner lites;
+
+    /* Report a parsing error */
+    /* Error(err): message */
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error ");
+
+        if (info instanceof java_cup.runtime.Symbol)
+            m.append("(" + info.toString() + ")");
+
+        m.append(": " + message);
+        System.out.println(m);
+    }
+
+    /* Report a fatal error */
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        throw new RuntimeException("Fatal Syntax Error");
+    }
+
+    Parser(Scanner scanner) { this.lites = scanner; }
+:};
+
+/* Terminals (tokens returned by the scanner). */
+
+// Terminal keywords
+terminal DEFINE, DO, BREAK, NEXT, RETURN, SCOPE, WHILE, FOR, IN, AS, TO, IF, ELIF, ELSE, IMPORT, REQUIRE, END, ANDK, ORK;
+
+// Terminal value
+terminal BOOLEAN_LITERAL, NULL_LITERAL;
+
+// Terminal seperators
+terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, SEMICOLON, COMMA, DOT, AT;
+
+// Terminal operators
+terminal EQ, GT, LT, NOT, COLON, EQUAL, GE, LE, NOTEQ, FULLEQ, NOTFULLEQ, INC, DEC, PLUS, MINIUS, MULT, DIV, AND, OR, XOR, MOD, PWR, LSHIFT, RSHIFT;
+terminal PLUSEQ, MINIUSEQ, MULTEQ, SQUARE;
+
+// Terminal stateful value
+terminal INTEGER_LITERAL, FLOATING_POINT_LITERAL, STRING_LITERAL, STRING_LITERAL_SINGLE;
+
+// Identifier
+terminal IDENTIFIER;
+

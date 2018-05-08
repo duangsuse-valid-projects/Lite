@@ -69,6 +69,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <packageName>org.duangsuse.lite</packageName>
                     <className>Parser</className>
                     <symbolsName>Symbol</symbolsName>
                 </configuration>
