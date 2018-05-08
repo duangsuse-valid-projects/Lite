@@ -229,7 +229,8 @@ Lite {
 
   OrExp
     = OrExp "|" AndExp -- or
-    | OrExp or AndExp -- orKeyword
+    | OrExp or AndExp  -- orKeyword
+    | OrExp in AndExp  -- in
     | AndExp
 
   AndExp
@@ -270,8 +271,7 @@ Lite {
   ExpExp
     = ExpExp "**" ExpExp      -- power
     | ExpExp "::" identifier  -- square
-    | ExpExp as identifier  -- as
-    | ExpExp in ExpExp      -- in
+    | ExpExp as identifier    -- as
     | PriExp
 
   PriExp
@@ -301,7 +301,7 @@ Lite {
     = "{" KvList "}"
 
   KvList
-    = (identifier ":" ("," | "\n"))*
+    = (identifier ":" Exp ("," | "\n"))*
 
   Call
     = Call "(" ExpList ")"  -- call
