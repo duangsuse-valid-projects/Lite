@@ -1,0 +1,405 @@
+// Complete Lite Desugared Syntax（DNF 范式, 是 duangsuse 设计的一种即使没有规则你们也能看懂的无上下文词条流模式文法描述）
+
+// Lite 的一个比较特殊的地方在于使用缩进语义, 我也是为了好看... 不过如果使用递归下降法, 解析不是问题耶
+// Lite Desugared 不包含特殊的字符串语法糖，也不包含缩进语义，标准 Lite 语法经过 Lite Lexer 和 Flatter 处理后可以交由此 JavaScript Parser 解析序列化 AST
+// 强制你使用 duangsuse 喜欢的 2 空格缩进代码风格, 语言本身类似 Ruby（Ruby 岛国语言好耶）
+// 有趣的语法: ![str1 str2 str3].each { |e| puts e } if a == 1 & b === :c
+
+// math -> expr Maybe( '+' OR '-' OR '*' OR '/' OR '**' OR '%' OR '<' OR '<=' OR '>' OR '>=' OR '&' OR '|' OR '==' OR '===' OR '!=' OR '<<' OR 'and' OR 'or' ) expr
+// binary -> math | cast | dot | in | square | arrow | range
+// range -> expr '..' expr
+// paren_expression -> '(' expression ')'
+// expression -> binary | list | table | value | incDec | not | negative | call | identifier | index | bracket_block | do_block | paren_expression
+// statement -> def | for | scope | while | when | if | simple_statement
+// simple_statement -> break | next | import | require | return | assignment | indexLet | square | arrow | dot | incDec | call Maybe( IF expression )
+// block -> Ary( statement NEWLINE ) END
+// for -> FOR identifier IN expression NEWLINE block
+// while -> WHILE expression NEWLINE block
+// scope -> SCOPE Maybe( label ) NEWLINE block
+// when -> WHEN expression NEWLINE Ary( expression Maybe( expression ) NEWLINE block ) END | when_is
+// when_is -> WHEN expression NEWLINE Ary( IS Ary( expression OR ) NEWLINE block ) END
+// indexLet -> expression '[' expression ']' '=' expression
+// index -> expression '[' expression ']'
+// if -> IF expression NEWLINE block Maybe( Ary( ELIF expression NEWLINE block ) ) Maybe( ELSE NEWLINE block )
+// identifier -> Maybe( AT ) label
+// def -> DEF identifier Maybe( nameList ) NEWLINE block
+// call -> identifier Maybe( CALL OR exprList )
+// assignment -> identifier '=' expression
+// not -> '!' expression
+// negative -> '-' expression
+// incDec -> identifier Maybe( '++' OR '--' )
+// return -> RETURN expression
+// require -> REQUIRE tokensAsString()
+// next -> NEXT
+// break -> BREAK
+// import -> IMPORT tokensAsString()
+// value -> TRUE | FALSE | NIL | Number | string
+// string -> '"' data '"' | stringB | stringC
+// stringB -> "'" data "'"
+// stringC -> ':' data
+// list -> Maybe( '!' ) '[' exprList ']'
+// table -> '{' kvList '}'
+// kvList -> Ary( label ':' expression Maybe( ',' OR NEWLINE ) )
+// arrow -> expression '->' label expression
+// square -> expression '::' label
+// in -> expression IN expression
+// dot -> expression '.' label Maybe( '()' OR exprList )
+// cast -> expression AS label
+// exprList -> Ary( expr Maybe( ' ' OR ',' ) )
+// nameList -> Maybe( '(' ) Ary( name Maybe( ',' OR ' ' ) ) Maybe( ')' ) | nameListB
+// nameListB -> '|' Ary( name Maybe( ',' OR ' ' ) ) '|'
+// bracket_block -> '{' Maybe( nameListB ) Ary( ':' simple_statement ) '}'
+// do_block -> DO Maybe ( nameListB ) block
+
+// Lite parser by duangsuse, no rights reserved (lexical rules see https://ohmlang.github.io/editor)
+Lite {
+  // The JavaScript lexical rules
+  // §A.1 Lexical Grammar -- https://es5.github.io/#A.1
+
+  Program = CompStmt
+
+  sourceCharacter = any
+
+  // Override Ohm's built-in definition of space.
+  space := whitespace | comment
+
+  whitespace = "\t"
+             | "\x0B"    -- verticalTab
+             | "\x0C"    -- formFeed
+             | " "
+             | "\u00A0"  -- noBreakSpace
+             | "\uFEFF"  -- byteOrderMark
+             | unicodeSpaceSeparator
+
+  lineTerminator = "\n" | "\r" | "\u2028" | "\u2029"
+  lineTerminatorSequence = "\n" | "\r" ~"\n" | "\u2028" | "\u2029" | "\r\n"
+
+  comment = multiLineComment | singleLineComment
+
+  multiLineComment = "<####>" (~">####<" sourceCharacter)* ">####<"
+  singleLineComment = "#" (~lineTerminator sourceCharacter)*
+
+  identifier (an identifier) = ~reservedWord identifierName
+  identifierName = identifierStart identifierPart*
+
+  identifierStart = letter | "$" | "_"
+                  | "\\" unicodeEscapeSequence -- escaped
+  identifierPart = identifierStart | unicodeCombiningMark
+                 | unicodeDigit | unicodeConnectorPunctuation
+                 | "\u200C" | "\u200D"
+  letter += unicodeCategoryNl
+  unicodeCategoryNl
+    = "\u2160".."\u2182" | "\u3007" | "\u3021".."\u3029"
+  unicodeDigit (a digit)
+    = "\u0030".."\u0039" | "\u0660".."\u0669" | "\u06F0".."\u06F9" | "\u0966".."\u096F" | "\u09E6".."\u09EF" | "\u0A66".."\u0A6F" | "\u0AE6".."\u0AEF" | "\u0B66".."\u0B6F" | "\u0BE7".."\u0BEF" | "\u0C66".."\u0C6F" | "\u0CE6".."\u0CEF" | "\u0D66".."\u0D6F" | "\u0E50".."\u0E59" | "\u0ED0".."\u0ED9" | "\u0F20".."\u0F29" | "\uFF10".."\uFF19"
+
+  unicodeCombiningMark (a Unicode combining mark)
+    = "\u0300".."\u0345" | "\u0360".."\u0361" | "\u0483".."\u0486" | "\u0591".."\u05A1" | "\u05A3".."\u05B9" | "\u05BB".."\u05BD" | "\u05BF".."\u05BF" | "\u05C1".."\u05C2" | "\u05C4".."\u05C4" | "\u064B".."\u0652" | "\u0670".."\u0670" | "\u06D6".."\u06DC" | "\u06DF".."\u06E4" | "\u06E7".."\u06E8" | "\u06EA".."\u06ED" | "\u0901".."\u0902" | "\u093C".."\u093C" | "\u0941".."\u0948" | "\u094D".."\u094D" | "\u0951".."\u0954" | "\u0962".."\u0963" | "\u0981".."\u0981" | "\u09BC".."\u09BC" | "\u09C1".."\u09C4" | "\u09CD".."\u09CD" | "\u09E2".."\u09E3" | "\u0A02".."\u0A02" | "\u0A3C".."\u0A3C" | "\u0A41".."\u0A42" | "\u0A47".."\u0A48" | "\u0A4B".."\u0A4D" | "\u0A70".."\u0A71" | "\u0A81".."\u0A82" | "\u0ABC".."\u0ABC" | "\u0AC1".."\u0AC5" | "\u0AC7".."\u0AC8" | "\u0ACD".."\u0ACD" | "\u0B01".."\u0B01" | "\u0B3C".."\u0B3C" | "\u0B3F".."\u0B3F" | "\u0B41".."\u0B43" | "\u0B4D".."\u0B4D" | "\u0B56".."\u0B56" | "\u0B82".."\u0B82" | "\u0BC0".."\u0BC0" | "\u0BCD".."\u0BCD" | "\u0C3E".."\u0C40" | "\u0C46".."\u0C48" | "\u0C4A".."\u0C4D" | "\u0C55".."\u0C56" | "\u0CBF".."\u0CBF" | "\u0CC6".."\u0CC6" | "\u0CCC".."\u0CCD" | "\u0D41".."\u0D43" | "\u0D4D".."\u0D4D" | "\u0E31".."\u0E31" | "\u0E34".."\u0E3A" | "\u0E47".."\u0E4E" | "\u0EB1".."\u0EB1" | "\u0EB4".."\u0EB9" | "\u0EBB".."\u0EBC" | "\u0EC8".."\u0ECD" | "\u0F18".."\u0F19" | "\u0F35".."\u0F35" | "\u0F37".."\u0F37" | "\u0F39".."\u0F39" | "\u0F71".."\u0F7E" | "\u0F80".."\u0F84" | "\u0F86".."\u0F87" | "\u0F90".."\u0F95" | "\u0F97".."\u0F97" | "\u0F99".."\u0FAD" | "\u0FB1".."\u0FB7" | "\u0FB9".."\u0FB9" | "\u20D0".."\u20DC" | "\u20E1".."\u20E1" | "\u302A".."\u302F" | "\u3099".."\u309A" | "\uFB1E".."\uFB1E" | "\uFE20".."\uFE23"
+
+  unicodeConnectorPunctuation = "\u005F" | "\u203F".."\u2040" | "\u30FB" | "\uFE33".."\uFE34" | "\uFE4D".."\uFE4F" | "\uFF3F" | "\uFF65"
+  unicodeSpaceSeparator = "\u2000".."\u200B" | "\u3000"
+
+  reservedWord = keyword | nullLiteral | booleanLiteral
+
+  // Note: keywords that are the complete prefix of another keyword should
+  // be prioritized (e.g. 'in' should come before 'instanceof')
+  keyword = break    | do        | scope      | in
+          | when     | else      | elif       | if
+          | as       | next      | return     | endKeyword
+          | or       | for       | and        | while
+          | require  | def       | import     | to
+
+  /*
+    Note: Punctuator and DivPunctuator (see https://es5.github.io/x7.html#x7.7) are
+    not currently used by this grammar.
+  */
+
+  literal = nullLiteral | booleanLiteral | numericLiteral
+          | stringLiteral
+  nullLiteral = "nil" ~identifierPart
+  booleanLiteral = ("true" | "false") ~identifierPart
+
+  // For semantics on how decimal literals are constructed, see section 7.8.3
+
+  // Note that the ordering of hexIntegerLiteral and decimalLiteral is reversed w.r.t. the spec
+  // This is intentional: the order decimalLiteral | hexIntegerLiteral will parse
+  // "0x..." as a decimal literal "0" followed by "x..."
+  numericLiteral = octalIntegerLiteral | hexIntegerLiteral | decimalLiteral
+
+  decimalLiteral = decimalIntegerLiteral "." decimalDigit* exponentPart -- bothParts
+                 |                       "." decimalDigit+ exponentPart -- decimalsOnly
+                 | decimalIntegerLiteral                   exponentPart -- integerOnly
+
+  decimalIntegerLiteral = nonZeroDigit decimalDigit*  -- nonZero
+                        | "0"                         -- zero
+  decimalDigit = "0".."9"
+  nonZeroDigit = "1".."9"
+
+  exponentPart = exponentIndicator signedInteger -- present
+               |                                 -- absent
+  exponentIndicator = "e" | "E"
+  signedInteger = "+" decimalDigit* -- positive
+                | "-" decimalDigit* -- negative
+                |     decimalDigit+ -- noSign
+
+  hexIntegerLiteral = "0x" hexDigit+
+                    | "0X" hexDigit+
+
+  // hexDigit defined in Ohm's built-in rules (otherwise: hexDigit = "0".."9" | "a".."f" | "A".."F")
+
+  octalIntegerLiteral = "0" octalDigit+
+
+  octalDigit = "0".."7"
+
+  // For semantics on how string literals are constructed, see section 7.8.4
+  stringLiteral = "\"" doubleStringCharacter* "\""
+                | "'" singleStringCharacter* "'"
+  doubleStringCharacter = ~("\"" | "\\" | lineTerminator) sourceCharacter -- nonEscaped
+                        | "\\" escapeSequence                             -- escaped
+                        | lineContinuation                                -- lineContinuation
+  singleStringCharacter = ~("'" | "\\" | lineTerminator) sourceCharacter -- nonEscaped
+                        | "\\" escapeSequence                            -- escaped
+                        | lineContinuation                               -- lineContinuation
+  lineContinuation = "\\" lineTerminatorSequence
+  escapeSequence = unicodeEscapeSequence
+                 | hexEscapeSequence
+                 | octalEscapeSequence
+                 | characterEscapeSequence  // Must come last.
+  characterEscapeSequence = singleEscapeCharacter
+                          | nonEscapeCharacter
+  singleEscapeCharacter = "'" | "\"" | "\\" | "b" | "f" | "n" | "r" | "t" | "v"
+  nonEscapeCharacter = ~(escapeCharacter | lineTerminator) sourceCharacter
+  escapeCharacter = singleEscapeCharacter | decimalDigit | "x" | "u"
+  octalEscapeSequence = zeroToThree octalDigit octalDigit    -- whole
+                      | fourToSeven octalDigit               -- eightTimesfourToSeven
+                      | zeroToThree octalDigit ~decimalDigit -- eightTimesZeroToThree
+                      | octalDigit ~decimalDigit             -- octal
+  hexEscapeSequence = "x" hexDigit hexDigit
+  unicodeEscapeSequence = "u" hexDigit hexDigit hexDigit hexDigit
+
+  zeroToThree = "0".."3"
+  fourToSeven = "4".."7"
+
+  // === Implementation-level rules (not part of the spec) ===
+
+  // A semicolon is "automatically inserted" if a newline or the end of the input stream is
+  // reached, or the offending token is "}".
+  // See https://es5.github.io/#x7.9 for more information.
+  // NOTE: Applications of this rule *must* appear in a lexical context -- either in the body of a
+  // lexical rule, or inside `#()`.
+  sc = ";" | end | lineTerminator | comment | endKeyword
+
+  // Convenience rules for parsing keyword tokens.
+  break = "break" ~identifierPart
+  do = "do" ~identifierPart
+  scope = "scope" ~identifierPart
+  in = "in" ~identifierPart
+  when = "when" ~identifierPart
+  else = "else" ~identifierPart
+  elif = "elif" ~identifierPart
+  if = "if" ~identifierPart
+  as = "as" ~identifierPart
+  next = "next" ~identifierPart
+  return = "return" ~identifierPart
+  endKeyword = "end" ~identifierPart
+  or = "or" ~identifierPart
+  for = "for" ~identifierPart
+  and = "and" ~identifierPart
+  while = "while" ~identifierPart
+  require = "require" ~identifierPart
+  def = "def" ~identifierPart
+  import = "import" ~identifierPart
+  to = "to" ~identifierPart
+
+  // end of javascript lexical rules
+
+  // start of expressions
+
+  // lite operator precedence
+  // |
+  // &
+  // < > <= >= != == !== ===
+  // <<
+  // to
+  // + -
+  // * / %
+  // ** . :: as in
+  // - ! ++ --
+  Exp
+    = OrExp
+
+  OrExp
+    = OrExp "|" AndExp -- or
+    | OrExp or AndExp -- orKeyword
+    | AndExp
+
+  AndExp
+    = AndExp "&" RelationExp -- and
+    | AndExp and RelationExp -- andKeyword
+    | RelationExp
+
+  RelationExp
+    = RelationExp "<" ShiftExp   -- greaterThan
+    | RelationExp ">" ShiftExp   -- lessThan
+    | RelationExp "<=" ShiftExp  -- greaterEqual
+    | RelationExp ">=" ShiftExp  -- lessEqual
+    | RelationExp "!=" ShiftExp  -- notEqual
+    | RelationExp "==" ShiftExp  -- equal
+    | RelationExp "!==" ShiftExp -- notFullEqual
+    | RelationExp "===" ShiftExp -- fullEqual
+    | ShiftExp
+
+  ShiftExp
+    = ShiftExp "<<" RangeExp  -- shift
+    | RangeExp
+
+  RangeExp
+    = RangeExp to AddExp  -- range
+    | AddExp
+
+  AddExp
+    = AddExp "+" MulExp  -- plus
+    | AddExp "-" MulExp  -- minus
+    | MulExp
+
+  MulExp
+    = MulExp "*" ExpExp  -- times
+    | MulExp "/" ExpExp  -- divide
+    | MulExp "%" ExpExp  -- remainder
+    | ExpExp
+
+  ExpExp
+    = ExpExp "**" ExpExp      -- power
+    | ExpExp "::" identifier  -- square
+    | ExpExp as identifier  -- as
+    | ExpExp in ExpExp      -- in
+    | PriExp
+
+  PriExp
+    = "(" Exp ")"          -- paren
+    | "-" PriExp           -- neg
+    | "!" PriExp           -- not
+    | identifier "++"      -- inc
+    | identifier "--"      -- dec
+    | literal              -- literal
+    | Call                 -- callExp
+    | LiteExpr             -- liteExp
+
+  LiteExpr
+    = List | Table | BracketBlock | DoBlock
+
+  Divider
+    = (", " | " " | ",")
+
+  List
+    = "[" ExpList "]"     -- simpleList
+    | ":[" ExpList "]"    -- wordList
+
+  ExpList
+  = (Divider? Exp)*
+
+  Table
+    = "{" KvList "}"
+
+  KvList
+    = (identifier ":" ("," | "\n"))*
+
+  Call
+    = Call "(" ExpList ")"  -- call
+    | Call "." identifier   -- callIndex
+    | Call "[" Exp "]"      -- justIndex
+    | Call ExpList          -- callEasy
+    | identifier            -- justIdentifier
+
+  BracketBlock
+    = "{" NameListB? (":" SimpleStatement)* "}"
+
+  NameList
+    = "(" (Divider? identifier)* ")"
+
+  NameListB
+    = "|" (Divider? identifier)* "|"
+
+  DoBlock
+    = do NameListB? Block
+
+  // end Exp part
+
+  SimpleStatement
+    = Exp     -- expressionStatement
+    | Break   -- break
+    | Next    -- continue
+    | Import  -- import
+    | Require -- require
+    | Return  -- return
+    | Assign  -- assignment
+    | IndexEq -- indexLet
+    | Arrow   -- arrowLet
+
+  Break
+    = break
+
+  Next
+    = next
+
+  Import
+    = import (~lineTerminator sourceCharacter)*
+
+  Require
+    = require (~lineTerminator sourceCharacter)*
+
+  Return
+    = return Exp?
+
+  Assign
+    = identifier "=" Exp      -- let
+    | "@" identifier "=" Exp  -- letLocal
+
+  IndexEq
+    = Exp "[" Exp "]" "=" Exp
+
+  Arrow
+    = Exp "->" identifier Exp
+
+  Statement
+    = SimpleStatement  -- simpleStatement
+    | SimpleStatement if Exp  -- controledSimpleStatement
+    | Def              -- defineMethod
+    | For              -- forLoop
+    | While            -- whileLoop
+    | Scope            -- scope
+    | When             -- when
+    | If               -- controlFlow
+
+  Def
+    = def identifier sc Block  -- defEasy
+    | def identifier sc Exp sc  -- defExpr
+    | def identifier NameList sc Block  -- def
+
+  For
+    = for identifier in Exp sc Block      -- forUsual
+    | for "@" identifier in Exp sc Block  -- forLocal
+
+  While
+    = while Exp sc Block
+
+  Scope
+    = scope identifier? sc Block
+
+  // a switch statement added in language specification 1.1
+  When
+    = when Exp sc (Exp sc Block) endKeyword             -- when
+    | when Exp sc (identifier Exp sc Block) endKeyword  -- whenEasy
+    | when Exp sc (in (Exp or)* sc Block)* endKeyword   -- whenIs
+
+  If
+    = if Exp sc Block                -- simpleEnd
+    | if Exp sc CompStmt else Block  -- ifElse
+    | if Exp sc CompStmt (elif Exp sc CompStmt)* (else CompStmt)? endKeyword -- ifElif
+
+  Block
+    = CompStmt endKeyword
+
+  CompStmt
+    = (Statement sc)*
+}
