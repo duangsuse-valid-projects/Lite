@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.duangsuse</groupId>
+    <artifactId>lite</artifactId>
+    <version>1.1-SNAPSHOT</version>
+    <name>Lite</name>
+    <description>Lite is a small reflect scripting tool for and written in Java</description>
+    <packaging>pom</packaging>
+    <url>https://github.com/duangsuse/Lite</url>
+
+    <licenses>
+        <license>
+            <name>BSD</name>
+            <url>http://opensource.org/licenses/BSD-3-Clause</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>duangsuse</id>
+            <name>duangsuse</name>
+            <email>fedora-opensuse@outlook.com</email>
+            <roles>
+                <role>fonder</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- JFlex lexer generator plugin -->
+            <plugin>
+                <groupId>de.jflex</groupId>
+                <artifactId>jflex-maven-plugin</artifactId>
+                <version>1.6.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Cup parser compiler plugin -->
+            <plugin>
+                <groupId>com.github.vbmacher</groupId>
+                <artifactId>cup-maven-plugin</artifactId>
+                <version>11b-20160615</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <className>Parser</className>
+                    <symbolsName>Symbol</symbolsName>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/duangsuse/Lite/issues</url>
+    </issueManagement>
+
+    <scm>
+        <connection>scm:git:git@github.com:duangsuse/lite.git</connection>
+        <developerConnection>scm:git:git@github.com:duangsuse/lite.git</developerConnection>
+        <url>https://github.com/duangsuse/lite</url>
+    </scm>
+
+</project>
