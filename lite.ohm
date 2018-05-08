@@ -79,7 +79,7 @@ Lite {
   multiLineComment = "<####>" (~">####<" sourceCharacter)* ">####<"
   singleLineComment = "#" (~lineTerminator sourceCharacter)*
 
-  identifier (an identifier) = ~reservedWord identifierName
+  identifier (an identifier) =  "@"? ~reservedWord identifierName
   identifierName = identifierStart identifierPart*
 
   identifierStart = letter | "$" | "_"
@@ -352,8 +352,7 @@ Lite {
     = return Exp?
 
   Assign
-    = identifier "=" Exp      -- let
-    | "@" identifier "=" Exp  -- letLocal
+    = identifier "=" Exp
 
   IndexEq
     = Exp "[" Exp "]" "=" Exp
@@ -377,8 +376,7 @@ Lite {
     | def identifier NameList sc Block  -- def
 
   For
-    = for identifier in Exp sc Block      -- forUsual
-    | for "@" identifier in Exp sc Block  -- forLocal
+    = for identifier in Exp sc Block
 
   While
     = while Exp sc Block
