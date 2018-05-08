@@ -187,7 +187,7 @@ Lite {
   // See https://es5.github.io/#x7.9 for more information.
   // NOTE: Applications of this rule *must* appear in a lexical context -- either in the body of a
   // lexical rule, or inside `#()`.
-  sc = ";" | end | lineTerminator | comment | endKeyword
+  sc = ";" | end | lineTerminator | comment
 
   // Convenience rules for parsing keyword tokens.
   break = "break" ~identifierPart
@@ -309,7 +309,7 @@ Lite {
     | Call "." identifier   -- callIndex
     | Call "[" Exp "]"      -- justIndex
     | Call ExpList          -- callEasy
-    | identifier            -- justIdentifier
+    | identifier ~"="       -- justIdentifier
 
   BracketBlock
     = "{" NameListB? (":" SimpleStatement)* "}"
@@ -363,13 +363,13 @@ Lite {
 
   Statement
     = SimpleStatement  -- simpleStatement
-    | SimpleStatement if Exp  -- controledSimpleStatement
     | Def              -- defineMethod
     | For              -- forLoop
     | While            -- whileLoop
     | Scope            -- scope
     | When             -- when
     | If               -- controlFlow
+    | "\n"             -- nop
 
   Def
     = def identifier sc Block  -- defEasy
@@ -401,5 +401,5 @@ Lite {
     = CompStmt endKeyword
 
   CompStmt
-    = (Statement sc)*
+    = (Statement sc?)*
 }
