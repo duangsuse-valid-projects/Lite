@@ -104,10 +104,10 @@ Lite {
   // Note: keywords that are the complete prefix of another keyword should
   // be prioritized (e.g. 'in' should come before 'instanceof')
   keyword = break    | do        | scope      | in
-          | when     | else      | elif       | if
+          | to       | else      | elif       | if
           | as       | next      | return     | endKeyword
           | or       | for       | and        | while
-          | require  | def       | import     | to
+          | require  | def       | import
 
   /*
     Note: Punctuator and DivPunctuator (see https://es5.github.io/x7.html#x7.7) are
@@ -194,7 +194,6 @@ Lite {
   do = "do" ~identifierPart
   scope = "scope" ~identifierPart
   in = "in" ~identifierPart
-  when = "when" ~identifierPart
   else = "else" ~identifierPart
   elif = "elif" ~identifierPart
   if = "if" ~identifierPart
@@ -366,13 +365,12 @@ Lite {
     | For              -- forLoop
     | While            -- whileLoop
     | Scope            -- scope
-    | When             -- when
     | If               -- controlFlow
     | "\n"             -- nop
 
   Def
-    = def identifier sc Block  -- defEasy
-    | def identifier sc Exp sc  -- defExpr
+    = def identifier sc Block           -- defEasy
+    | def identifier sc Exp sc          -- defExpr
     | def identifier NameList sc Block  -- def
 
   For
@@ -383,12 +381,6 @@ Lite {
 
   Scope
     = scope identifier? sc Block
-
-  // a switch statement added in language specification 1.1
-  When
-    = when Exp sc (Exp sc Block) endKeyword             -- when
-    | when Exp sc (identifier Exp sc Block) endKeyword  -- whenEasy
-    | when Exp sc (in (Exp or)* sc Block)* endKeyword   -- whenIs
 
   If
     = if Exp sc Block                -- simpleEnd
