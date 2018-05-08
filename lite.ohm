@@ -301,7 +301,7 @@ Lite {
     = "{" KvList "}"
 
   KvList
-    = (identifier ":" Exp ("," | "\n"))*
+    = (identifier ":" Exp ("," | "\n")?)*
 
   Call
     = Call "(" ExpList ")"  -- call
