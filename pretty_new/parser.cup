@@ -1,0 +1,147 @@
+// Lite parser, by duangsuse and written in cup
+// (C) 2018 no rights is reserved
+
+// for the scanner see scanner.flex
+// for unicode escape see unicode.flex
+
+import java_cup.runtime.*;
+
+// Begin parser
+parser code {:
+    // Connect this parser to a scanner!
+    Lexer lites;
+
+    /* Report a parsing error */
+    /* Error(err): message */
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error ");
+
+        if (info instanceof java_cup.runtime.Symbol)
+            m.append("(" + info.toString() + ")");
+
+        m.append(": " + message);
+        System.out.println(m);
+    }
+
+    /* Report a fatal error */
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        throw new RuntimeException("Fatal Syntax Error");
+    }
+
+    Parser(Lexer scanner) { this.lites = scanner; }
+:};
+
+/* Terminals (tokens returned by the scanner). */
+
+// Terminal keywords
+terminal DEFINE, DO, BREAK, NEXT, RETURN, SCOPE, WHILE, FOR, IN, AS, TO, IF, ELIF, ELSE, IMPORT, REQUIRE, END, ANDK, ORK;
+
+// Terminal value
+terminal Boolean BOOLEAN_LITERAL;  // true false
+terminal NULL_LITERAL;  // nil
+
+// Terminal seperators
+terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, SEMICOLON, COMMA, DOT, AT;
+
+// Terminal operators
+terminal EQ, GT, LT, NOT, COLON, EQUAL, GE, LE, NOTEQ, FULLEQ, NOTFULLEQ, INC, DEC, PLUS, SUB, MULT, DIV, AND, OR, XOR, MOD, PWR, LSHIFT, RSHIFT;
+terminal PLUSEQ, SUBEQ, MULTEQ, SQUARE;
+
+// Fake terminal (unary sub)
+terminal USUB;
+
+// Terminal stateful value
+terminal Number INTEGER_LITERAL, FLOATING_POINT_LITERAL;
+terminal String STRING_LITERAL, STRING_LITERAL_SINGLE;
+
+// Identifier
+terminal String IDENTIFIER;
+
+// Newline
+terminal NEWLINE;
+
+/* non terminals */
+non terminal ExpList;
+non terminal KvList;
+non terminal KvListItem;
+
+/* Lite precedence */
+/* See https://github.com/duangsuse/Lite/blob/master/lite.ohm */
+precedence left IN;
+precedence left OR, ORK;
+precedence left AND, ANDK;
+precedence left GT, LT, GE, LE, NOTEQ, EQUAL, NOTFULLEQ, FULLEQ;
+precedence left LSHIFT, RSHIFT;
+precedence left TO;
+
+/* Now start add/sub */
+precedence left PLUS, SUB;
+precedence left MULT, DIV, MOD;
+precedence left PWR, SQUARE, AS;
+
+/* Primitive expression excluding unary sub */
+precedence left USUB, NOT, INC, DEC;
+
+/* Literal */
+NumberLiteral ::= INTEGER_LITERAL | FLOATING_POINT_LITERAL;
+StringLiteral ::= STRING_LITERAL  | STRING_LITERAL_SINGLE; 
+
+Literal ::= BOOLEAN_LITERAL
+          | NULL_LITERAL
+          | NumberLiteral
+          | StringLiteral
+          ;
+
+/* Lite math expression */
+Exp ::= Exp OR Exp
+      | Exp ORK Exp
+      | Exp IN Exp
+      | Exp AND Exp
+      | Exp ANDK Exp
+      | Exp GT Exp
+      | Exp LT Exp
+      | Exp GE Exp
+      | Exp LE Exp
+      | Exp NOTEQ Exp
+      | Exp EQUAL Exp
+      | Exp NOTFULLEQ Exp
+      | Exp FULLEQ Exp
+      | Exp LSHIFT Exp
+      | Exp RSHIFT Exp
+      | Exp TO Exp
+      | Exp PLUS Exp
+      | Exp SUB Exp
+      | Exp MULT Exp
+      | Exp DIV Exp
+      | Exp MOD Exp
+      | Exp PWR Exp
+      | Exp SQUARE Exp
+      | Exp AS Exp
+      | LPAREN Exp RPAREN
+      | SUB Exp %prec USUB
+      | NOT Exp
+      | IDENTIFIER INC
+      | IDENTIFIER DEC
+      | Literal
+      | Call
+      | LiteExp
+      ;
+
+/* Lite primitive expression */
+LiteExp ::= List       // [a, b, c] :[foo bar baz] 
+          | Table      // { a: b, b:c } { a:b NEWLINE b:c, c: 1 } {}
+          | BraceBlock // { puts 1 } { |a| lite.delete a: puts a: exit 1 }
+          | DoBlock    // do || end do puts; end
+          ;
+
+List ::= LBRACK ExpList RBRACK       // [ 1, 2, 3 ]
+       | LBRACK RBRACK               // []
+       | COLON LBRACK ExpList RBRACK // :[ 1, 2, 3]
+       ;
+
+Table ::= LBRACE RBRACE        // {}
+        | LBRACE KvList RBRACE // {a:2}
+        ;
+
+ExpList ::= ExpList COMMA Exp;

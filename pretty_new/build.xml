@@ -1,0 +1,49 @@
+<project name="Lite" default="dist" basedir=".">
+  <description>
+    Build file for a interperter written in Java: Lite
+  </description>
+  <!-- Set global properties for this build -->
+  <property name="src" location="src" />
+  <property name="build" location="build" />
+  <property name="dist" location="dist" />
+
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}" />
+  </target>
+
+  <!-- Generate sources -->
+  <target name="cup">
+    <cup srcfile="parser.cup" force="true" destdir="${src}" interface="true" />
+  </target>
+
+  <target name="jflex">
+    <jflex file="scanner.flex" nobak="on" destdir="${src}" />
+    <jflex file="unicode.flex" nobak="on" destdir="${src}" />
+  </target>
+
+  <target name="compile" depends="init" description="compile the source">
+    <!-- Compile the Java code from ${src} into ${build} -->
+    <javac srcdir="${src}" classpath="java-cup-11b.jar" destdir="${build}" includeantruntime="false" />
+  </target>
+
+  <target name="dist" depends="compile" description="generate the distribution">
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist}/lib" />
+
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+    <jar jarfile="${dist}/lib/lite-${DSTAMP}.jar" basedir="${build}" />
+  </target>
+
+  <target name="clean" description="clean up">
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}" />
+    <delete dir="${dist}" />
+  </target>
+
+  <!-- External tasks -->
+  <taskdef classname="jflex.anttask.JFlexTask" name="jflex" classpath="jflex-1.7.0.jar" />
+  <taskdef classname="java_cup.anttask.CUPTask" name="cup" classpath="java-cup-11b.jar" />
+</project>
