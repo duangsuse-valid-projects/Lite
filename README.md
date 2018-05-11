@@ -12,7 +12,7 @@
 
 ^ (我的意思是一个类似 Int 的解释器工具, 有扩展功能：快速输入 Keyword|Operator/AST 查看/Lex 结果查看/高亮/获取设置变量/脚本分享/Reflect 可视化查看(类/对象/方法/直接创建原生类型/调用方法和类型构造器)/Intent 接口 等的 Android 应用)
 
-^ 我现在明确的告诉你们，我写这么垃圾的解释器的目标是提供 Androlua 的替代品，即使后者已经开发了两年，后者维护的用心程度是非常的 ~~fucking~~, 默认打包体积已经超过了预算达到几乎 500k, 而且自带 TextWarrior 和百度 SDK, 而且虽然开源但源码没更新很久，而且 Lua 用在这上面大才小用，而且 AndroLuaJ 也不开源，而且它还加了壳，这是我忍不了的，而且他们不够优雅，因为 Lua 不够优雅，比方说
+^ 我现在明确的告诉你们，我写这么垃圾的解释器的目标是提供 Androlua 的替代品，即使后者已经开发了两年，后者维护的用心程度是非常的 ~~fucking~~, 默认打包体积已经超过了预算达到几乎 500k, 而且自带 TextWarrior 和百度 SDK, 而且虽然开源但源码没更新很久，而且 Lua 用在这上面大材小用，而且 [AndroLuaJ](//androluaj.mythoi.cn) 也不开源，而且它还加了壳，这是我忍不了的，而且他们不够优雅，因为 Lua 不够优雅，比方说
 
 在 Lite 里你可以这么写（套用 Ruby 的例子了）
 （很抱歉小部分是下一个手写 parser 版本的语法, 这个版本的 parser 根本离不开 end）
@@ -33,12 +33,14 @@ lay << @text # 这是 Lite 1.1 的语法, AST 解释器的内部隐式方法调�
   end
 end
 # next example
-case input.text
+# 虽然这个语法已经去掉了，不过 Lite 依然可以用块和 callEasy 特性造出类似的
+when input.text
   "OC<"
     puts ""
   contains "foo" exit
   nil exit if false
-  length(0) puts "${input.text}"
+  length 0 puts "${input.text}"
+end
 ```
 
 (Andro)Lua 里
